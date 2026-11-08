@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Approve Memories</title>
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/styles.css">
+<style>
+  .admin-bar { display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap; margin:28px 0 8px; }
+  .stats { display:flex; gap:10px; flex-wrap:wrap; }
+  .stats span { background:var(--card); border:1px solid var(--line); border-radius:999px; padding:4px 12px; font-size:.9rem; }
+  .item { break-inside: avoid; margin-bottom: 18px; }
+  .item .card { margin-bottom: 0; border-bottom-left-radius: 0; border-bottom-right-radius: 0; }
+  .item.pending .card { border: 2px solid var(--amber); border-bottom: 0; }
+  .item.approved .card { border: 2px solid var(--court); border-bottom: 0; }
+  .actions { display:flex; gap:8px; flex-wrap:wrap; align-items:center; background:var(--card); border:1px solid var(--line); border-top:0; border-radius:0 0 var(--radius) var(--radius); padding:12px 16px; }
+  .item.pending .actions { border:2px solid var(--amber); border-top:0; }
+  .item.approved .actions { border:2px solid var(--court); border-top:0; }
+  .status { font-size:.8rem; font-weight:600; margin-right:auto; }
+  .btn-danger { background:transparent; color:var(--error); border:1.5px solid #e8c4c1; }
+  .signin { max-width:420px; margin:56px auto; display:grid; gap:14px; text-align:center; }
+</style>
+</head>
+<body>
+<header class="band" style="padding-bottom:40px">
+  <div class="wrap">
+    <nav class="top">
+      <a class="logo" href="/">get<span>naroo</span></a>
+      <div class="navlinks"><a href="/wall">Wall</a><a href="#" id="signout" hidden>Sign out</a></div>
+    </nav>
+    <div class="band-body" style="margin-top:32px">
+      <span class="badge mono">CODE REVIEW</span>
+      <h1 style="font-size:clamp(2rem,6vw,3rem)">Approve memories</h1>
+      <p class="lede">Only approved cards appear on the wall, and only from November 16.</p>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+  <section id="signin" class="signin" hidden>
+    <p>Sign in with the organizer email and we'll send you a sign-in link.</p>
+    <input type="text" id="email" inputmode="email" autocomplete="email" placeholder="you@example.com">
+    <button class="btn btn-court" id="send">Email me a sign-in link</button>
+    <p class="hint" id="signinMsg"></p>
+  </section>
+
+  <section id="panel" hidden>
+    <div class="admin-bar">
+      <div class="stats" id="stats"></div>
+      <div class="filters" style="margin:0" role="group" aria-label="Show">
+        <button type="button" data-v="pending" aria-pressed="true">Pending</button>
+        <button type="button" data-v="approved" aria-pressed="false">Approved</button>
+        <button type="button" data-v="all" aria-pressed="false">All</button>
+      </div>
+    </div>
+    <p class="error" id="err" hidden></p>
+    <div class="masonry" id="list" style="margin-top:20px"></div>
+    <p class="empty" id="empty" hidden>Nothing here.</p>
+  </section>
+</main>
+
+<script src="/config.js"></script>
+<script src="/card.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+(async function () {
+  const C = window.NAROO;
+  if (!C.SUPABASE_URL || !C.SUPABASE_ANON_KEY) { document.querySelector("main").innerHTML = '<p class="empty">Not set up yet.</p>'; return; }
+  const sb = window.supabase.createClient(C.SUPABASE_URL, C.SUPABASE_ANON_KEY);
+  const pub = path => sb.storage.from(C.BUCKET).getPublicUrl(path).data.publicUrl;
+  let rows = [], view = "pending";
+
+  const err = document.getElementById("err");
+  const showErr = m => { err.textContent = m; err.hidden = false; };
+
+  async function start() {
+    const { data: { session } } = await sb.auth.getSession();
+    if (!session) { document.getElementById("signin").hidden = false; return; }
+    document.getElementById("signout").hidden = false;
+    const { data: isAdmin } = await sb.rpc("is_admin");
+    if (!isAdmin) {
+      document.querySelector("main").innerHTML = `<p class="empty">${NarooCard.esc(session.user.email)} isn't an organizer account.</p>`;
+      return;
+    }
+    document.getElementById("panel").hidden = false;
+    await load();
+  }
+
+  async function load() {
+    const { data, error } = await sb.from("memories").select("*").order("created_at", { ascending: false });
+    if (error) return showErr(error.message);
+    rows = data; render();
+  }
+
+  function render() {
+    const p = rows.filter(r => !r.approved).length, a = rows.length - p;
+    document.getElementById("stats").innerHTML = `<span><b>${rows.length}</b> total</span><span><b>${p}</b> pending</span><span><b>${a}</b> approved</span>`;
+    const shown = rows.filter(r => view === "all" || (view === "pending" ? !r.approved : r.approved));
+    document.getElementById("empty").hidden = shown.length > 0;
+    document.getElementById("list").innerHTML = shown.map(r => {
+      const card = NarooCard.renderCard(r, (r.media || []).map(x => ({ kind: x.kind, url: pub(x.path) })));
+      const when = new Date(r.created_at).toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short" });
+      return `<div class="item ${r.approved ? "approved" : "pending"}" data-id="${r.id}">
+        ${card}
+        <div class="actions">
+          <span class="status">${r.approved ? "✓ Approved" : "Pending"}${r.featured ? " · ★ Pinned" : ""}<br><span class="hint" style="font-weight:400">${when}</span></span>
+          ${r.approved
+            ? `<button class="btn btn-ghost btn-small" data-a="unapprove">Unapprove</button>`
+            : `<button class="btn btn-court btn-small" data-a="approve">Approve</button>`}
+          <button class="btn btn-ghost btn-small" data-a="pin">${r.featured ? "Unpin" : "★ Pin to top"}</button>
+          <button class="btn btn-danger btn-small" data-a="delete">Delete</button>
+        </div></div>`;
+    }).join("");
+  }
+
+  document.getElementById("list").addEventListener("click", async e => {
+    const b = e.target.closest("button[data-a]"); if (!b) return;
+    const id = b.closest(".item").dataset.id; const r = rows.find(x => x.id === id);
+    b.disabled = true; err.hidden = true;
+    let res;
+    if (b.dataset.a === "approve") res = await sb.from("memories").update({ approved: true }).eq("id", id);
+    if (b.dataset.a === "unapprove") res = await sb.from("memories").update({ approved: false }).eq("id", id);
+    if (b.dataset.a === "pin") res = await sb.from("memories").update({ featured: !r.featured }).eq("id", id);
+    if (b.dataset.a === "delete") {
+      if (!confirm(`Delete ${r.name}'s memory and its photos/videos for good? This can't be undone.`)) { b.disabled = false; return; }
+      const paths = (r.media || []).map(m => m.path);
+      if (paths.length) await sb.storage.from(C.BUCKET).remove(paths);
+      res = await sb.from("memories").delete().eq("id", id);
+    }
+    if (res && res.error) { showErr(res.error.message); b.disabled = false; return; }
+    await load();
+  });
+
+  document.querySelectorAll(".filters button").forEach(b => b.addEventListener("click", () => {
+    document.querySelectorAll(".filters button").forEach(x => x.setAttribute("aria-pressed", String(x === b)));
+    view = b.dataset.v; render();
+  }));
+
+  document.getElementById("send").onclick = async () => {
+    const email = document.getElementById("email").value.trim();
+    const msg = document.getElementById("signinMsg");
+    if (!email) { msg.textContent = "Enter your email."; return; }
+    const { error } = await sb.auth.signInWithOtp({ email, options: { emailRedirectTo: location.origin + "/approve", shouldCreateUser: true } });
+    msg.textContent = error ? "Couldn't send: " + error.message : "Check your inbox for a sign-in link from Supabase.";
+  };
+  document.getElementById("signout").onclick = async e => { e.preventDefault(); await sb.auth.signOut(); location.reload(); };
+
+  sb.auth.onAuthStateChange((ev) => { if (ev === "SIGNED_IN" && document.getElementById("panel").hidden && !document.getElementById("signin").hidden) location.reload(); });
+  start();
+})();
+</script>
+</body>
+</html>
