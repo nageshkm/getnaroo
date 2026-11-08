@@ -1,0 +1,229 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Naroo v5.0</title>
+<meta name="description" content="Naroo turns 50. Now generally available.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #f7f3ea;
+    --ink: #1d2a22;
+    --muted: #5b675f;
+    --court: #1f4d3a;
+    --ball: #d6e83a;
+    --amber: #e0962b;
+    --card: #ffffff;
+    --line: #e2dccd;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: Inter, system-ui, sans-serif;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+  a { color: inherit; }
+  .wrap { max-width: 960px; margin: 0 auto; padding: 0 20px; }
+  .mono { font-family: "JetBrains Mono", monospace; font-size: 0.8rem; letter-spacing: 0.04em; }
+
+  /* Hero */
+  header {
+    background: var(--court);
+    color: #f7f3ea;
+    padding: 28px 0 88px;
+    position: relative;
+    overflow: hidden;
+  }
+  header::before, header::after {
+    content: ""; position: absolute; border: 2px solid rgba(247,243,234,0.18);
+  }
+  header::before { inset: 40px -40px auto -40px; height: 70%; }
+  header::after { left: 50%; top: 40px; bottom: 0; border-width: 0 0 0 2px; }
+  nav { display: flex; justify-content: space-between; align-items: center; position: relative; z-index: 1; }
+  .logo { font-family: Fraunces, serif; font-weight: 700; font-size: 1.2rem; text-decoration: none; }
+  .logo span { color: var(--ball); }
+  .hero { position: relative; z-index: 1; margin-top: 72px; }
+  .badge {
+    display: inline-block; background: var(--ball); color: var(--court);
+    padding: 4px 12px; border-radius: 999px; font-weight: 600;
+  }
+  h1 {
+    font-family: Fraunces, serif; font-weight: 700;
+    font-size: clamp(2.8rem, 9vw, 5.6rem); line-height: 1.02;
+    margin: 20px 0 18px; letter-spacing: -0.02em;
+  }
+  h1 em { font-style: normal; color: var(--ball); }
+  .lede { font-size: 1.15rem; max-width: 560px; color: rgba(247,243,234,0.85); }
+  .cta { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 32px; }
+  .btn {
+    display: inline-block; padding: 13px 22px; border-radius: 10px;
+    font-weight: 600; text-decoration: none; transition: transform .15s;
+  }
+  .btn:hover { transform: translateY(-2px); }
+  .btn-primary { background: var(--ball); color: var(--court); }
+  .btn-ghost { border: 1.5px solid rgba(247,243,234,0.4); color: #f7f3ea; }
+  .ball {
+    position: absolute; right: 6%; top: 120px; width: 120px; height: 120px;
+    border-radius: 50%; background: var(--ball); z-index: 1;
+    box-shadow: inset -12px -12px 0 rgba(0,0,0,0.08);
+  }
+  .ball::before, .ball::after {
+    content: ""; position: absolute; width: 120px; height: 120px; border-radius: 50%;
+    border: 4px solid #f7f3ea; top: 0;
+  }
+  .ball::before { left: -78px; }
+  .ball::after { left: 78px; }
+  .ball { overflow: hidden; }
+
+  /* Sections */
+  section { padding: 80px 0 0; }
+  .eyebrow { color: var(--amber); }
+  h2 {
+    font-family: Fraunces, serif; font-weight: 700;
+    font-size: clamp(1.8rem, 5vw, 2.6rem); line-height: 1.15; margin: 8px 0 12px;
+  }
+  .sub { color: var(--muted); max-width: 600px; }
+
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; margin-top: 32px; }
+  .card {
+    background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 24px;
+  }
+  .card .icon { font-size: 1.6rem; }
+  .card h3 { font-size: 1.1rem; margin: 10px 0 6px; }
+  .card p { color: var(--muted); font-size: 0.95rem; }
+  .tag { display: inline-block; margin-top: 12px; color: var(--court); background: #e9f0d0; padding: 2px 8px; border-radius: 6px; }
+
+  /* Changelog */
+  .log { margin-top: 32px; border-left: 2px solid var(--line); padding-left: 24px; }
+  .entry { position: relative; padding-bottom: 28px; }
+  .entry::before {
+    content: ""; position: absolute; left: -32px; top: 6px; width: 14px; height: 14px;
+    border-radius: 50%; background: var(--bg); border: 3px solid var(--court);
+  }
+  .entry.now::before { background: var(--ball); }
+  .entry .ver { color: var(--court); font-weight: 600; }
+  .entry p { color: var(--muted); }
+
+  /* Contribute */
+  .contribute {
+    margin-top: 80px; background: var(--amber); color: #2a1a05;
+    border-radius: 20px; padding: 48px 32px; text-align: center;
+  }
+  .contribute h2 { margin-top: 0; }
+  .contribute p { max-width: 520px; margin: 0 auto 24px; }
+  .prompts { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin-bottom: 28px; }
+  .prompts span { background: rgba(255,255,255,0.5); padding: 6px 12px; border-radius: 999px; font-size: 0.9rem; }
+  .btn-dark { background: var(--ink); color: #f7f3ea; }
+
+  footer { padding: 56px 0 40px; color: var(--muted); text-align: center; font-size: 0.9rem; }
+
+  @media (max-width: 640px) {
+    .ball { width: 72px; height: 72px; top: 96px; right: 20px; }
+    .ball::before, .ball::after { width: 72px; height: 72px; border-width: 3px; }
+    .ball::before { left: -47px; } .ball::after { left: 47px; }
+    header { padding-bottom: 64px; }
+    .hero { margin-top: 96px; }
+    .contribute { padding: 36px 20px; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap">
+    <nav>
+      <a class="logo" href="/">get<span>naroo</span></a>
+      <span class="mono">v5.0 · GA</span>
+    </nav>
+    <div class="ball" aria-hidden="true"></div>
+    <div class="hero">
+      <span class="badge mono">RELEASE NOTES · NAROO 5.0</span>
+      <h1>Naroo v5.0 is<br><em>now generally available.</em></h1>
+      <p class="lede">Fifty years in production. Built products, built teams, built people. Still shipping, still serving aces, still knows the best beer on the menu.</p>
+      <div class="cta">
+        <a class="btn btn-primary" href="#contribute">Add your note</a>
+        <a class="btn btn-ghost" href="#features">See what's in this release</a>
+      </div>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+
+  <section id="features">
+    <span class="eyebrow mono">WHAT'S IN THIS RELEASE</span>
+    <h2>Features everyone keeps mentioning</h2>
+    <p class="sub">Compiled from years of user feedback by the people lucky enough to work, play and drink with him.</p>
+    <div class="grid">
+      <div class="card">
+        <div class="icon">🧭</div>
+        <h3>Product leadership</h3>
+        <p>Finds the real problem behind the requested feature, and makes the roadmap make sense to everyone in the room.</p>
+        <span class="tag mono">core</span>
+      </div>
+      <div class="card">
+        <div class="icon">🌱</div>
+        <h3>Mentorship at scale</h3>
+        <p>A long list of people who are better at what they do because Naroo took the time. This site is partly theirs.</p>
+        <span class="tag mono">most loved</span>
+      </div>
+      <div class="card">
+        <div class="icon">🎾</div>
+        <h3>Tennis</h3>
+        <p>Competitive on court, gracious at the net. Will absolutely want a rematch.</p>
+        <span class="tag mono">always on</span>
+      </div>
+      <div class="card">
+        <div class="icon">🍺</div>
+        <h3>Beer</h3>
+        <p>Post-match debriefs, product debates and big decisions, best held over a good pint.</p>
+        <span class="tag mono">after hours</span>
+      </div>
+      <div class="card">
+        <div class="icon">🛠️</div>
+        <h3>Builder mode</h3>
+        <p>Can't see a problem without sketching a fix. Still building, at 50.</p>
+        <span class="tag mono">never deprecated</span>
+      </div>
+    </div>
+  </section>
+
+  <section id="changelog">
+    <span class="eyebrow mono">CHANGELOG</span>
+    <h2>Version history</h2>
+    <p class="sub">Five major releases so far. Full notes coming soon, written by the people who were there.</p>
+    <div class="log">
+      <div class="entry"><span class="ver mono">v1.0</span><p>Initial release. Early signs of curiosity and opinions.</p></div>
+      <div class="entry"><span class="ver mono">v2.0</span><p>Discovers tennis, building things, and arguing about both.</p></div>
+      <div class="entry"><span class="ver mono">v3.0</span><p>Enters product. Begins shipping.</p></div>
+      <div class="entry"><span class="ver mono">v4.0</span><p>Leads teams. Starts growing other people's careers as well as products.</p></div>
+      <div class="entry now"><span class="ver mono">v5.0 · current</span><p>Generally available. Now with blog support coming soon.</p></div>
+    </div>
+  </section>
+
+  <div class="contribute" id="contribute">
+    <span class="mono">CALL FOR CONTRIBUTIONS</span>
+    <h2>Worked with Naroo? Played him? Owe him a beer?</h2>
+    <p>Send a short video, a photo or a few lines. Everything goes on his wall for his 50th.</p>
+    <div class="prompts">
+      <span>A memory with him</span>
+      <span>Something he taught you</span>
+      <span>A wish for his next decade</span>
+    </div>
+    <!-- Replace the # below with your Google Form (or other upload) link -->
+    <a class="btn btn-dark" href="#">Share your note →</a>
+  </div>
+
+</main>
+
+<footer>
+  <div class="wrap">Made with love by Naroo's friends, mentees and doubles partners · getnaroo.com</div>
+</footer>
+
+</body>
+</html>
