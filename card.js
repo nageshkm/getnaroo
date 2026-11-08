@@ -32,7 +32,7 @@
     let mediaHtml = "";
     if (vids.length || imgs.length) {
       const items = [
-        ...vids.map(v => `<video src="${esc(v.url)}" controls playsinline preload="metadata"></video>`),
+        ...vids.map(v => `<video src="${esc(v.url)}" controls playsinline preload="none"></video>`),
         ...imgs.map(i => `<img src="${esc(i.url)}" alt="Photo shared by ${esc(m.name)}" loading="lazy">`),
       ];
       mediaHtml = `<div class="media${items.length > 1 ? " multi" : ""}">${items.join("")}</div>`;
