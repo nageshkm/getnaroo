@@ -171,3 +171,9 @@ footer.site { padding: 48px 0 40px; color: var(--muted); text-align: center; fon
   .count div { min-width: 0; flex: 1; padding: 12px 6px; }
   .count b { font-size: 1.5rem; }
 }
+
+/* Free-form card text */
+.card .words { font-size: 1.02rem; line-height: 1.65; }
+.card .body { gap: 10px; }
+
+[hidden] { display: none !important; }

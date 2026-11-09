@@ -40,53 +40,22 @@
 
   <form class="share" id="form" novalidate>
     <fieldset>
-      <legend>Who are you?</legend>
-      <label class="field">Your name
-        <input type="text" name="name" maxlength="80" autocomplete="name" required placeholder="As Naroo knows you">
-      </label>
       <div class="field">
-        <span style="font-weight:500">Which Naroo do you know best?</span>
-        <div class="chips" role="radiogroup" aria-label="Which Naroo do you know best">
-          <label class="chip"><input type="radio" name="relation" value="work" required><span>💼 Work</span></label>
-          <label class="chip"><input type="radio" name="relation" value="tennis"><span>🎾 Tennis</span></label>
-          <label class="chip"><input type="radio" name="relation" value="beer"><span>🍺 Beer</span></label>
-          <label class="chip"><input type="radio" name="relation" value="life"><span>🌱 Life</span></label>
+        <span style="font-weight:500">Photos and videos</span>
+        <div class="drop" id="drop" tabindex="0" role="button" aria-label="Add photos or videos">
+          <strong>Tap to add photos or videos</strong>
+          <span class="hint">Add one or a few, up to 6. Videos up to 50 MB, about a minute from a phone.</span>
         </div>
+        <input type="file" id="files" accept="image/*,video/*" multiple hidden>
+        <div class="thumbs" id="thumbs"></div>
       </div>
-      <div class="row2">
-        <label class="field"><span>How you know him <span class="opt">optional</span></span>
-          <input type="text" name="how_known" maxlength="140" placeholder="e.g. on his product team, doubles partner">
-        </label>
-        <label class="field"><span>Year you met <span class="opt">optional</span></span>
-          <input type="number" name="year_met" min="1976" max="2026" inputmode="numeric" placeholder="e.g. 2019">
-        </label>
-      </div>
-    </fieldset>
 
-    <fieldset>
-      <legend>Your memory</legend>
-      <p class="hint">Answer one, two or all three. A few honest lines beat a perfect paragraph.</p>
-      <label class="field">A moment with Naroo you still think about
-        <textarea name="moment" maxlength="2000" placeholder="The match, the meeting, the beer, the call..."></textarea>
+      <label class="field">Say anything
+        <textarea name="moment" maxlength="5000" style="min-height:180px" placeholder="A moment, a story, a thank-you, a joke only he'll get…"></textarea>
       </label>
-      <label class="field">Something he taught you
-        <textarea name="taught" maxlength="2000" placeholder="Advice that stuck, a habit you picked up from him..."></textarea>
-      </label>
-      <label class="field">Your wish for v6.0 (his next decade)
-        <textarea name="wish" maxlength="1000" style="min-height:80px"></textarea>
-      </label>
-    </fieldset>
 
-    <fieldset>
-      <legend>Photos &amp; video <span class="opt mono" style="font-size:.75rem;font-family:'JetBrains Mono',monospace;color:var(--muted)">OPTIONAL</span></legend>
-      <div class="drop" id="drop" tabindex="0" role="button" aria-label="Add photos or a video">
-        <strong>Tap to add photos or a short video</strong>
-        <span class="hint">Up to 6 files. Videos up to 50 MB (about a minute from a phone).</span>
-      </div>
-      <input type="file" id="files" accept="image/*,video/*" multiple hidden>
-      <div class="thumbs" id="thumbs"></div>
-      <label class="field"><span>Or a link to a longer video or album <span class="opt">YouTube, Google Drive, Google Photos</span></span>
-        <input type="url" name="video_link" maxlength="500" placeholder="https://">
+      <label class="field">Who's it from?
+        <input type="text" name="name" maxlength="80" autocomplete="name" required placeholder="Your name, as Naroo knows you">
       </label>
     </fieldset>
 
@@ -214,20 +183,11 @@
     const fd = new FormData(form);
     const data = {
       name: (fd.get("name") || "").trim(),
-      relation: fd.get("relation") || "",
-      how_known: (fd.get("how_known") || "").trim() || null,
-      year_met: fd.get("year_met") ? parseInt(fd.get("year_met"), 10) : null,
       moment: (fd.get("moment") || "").trim() || null,
-      taught: (fd.get("taught") || "").trim() || null,
-      wish: (fd.get("wish") || "").trim() || null,
-      video_link: (fd.get("video_link") || "").trim() || null,
     };
     if (!data.name) return showError("Please add your name, so Naroo knows who this is from.");
-    if (!data.relation) return showError("Pick which Naroo you know best: Work, Tennis, Beer or Life.");
-    if (data.year_met && (data.year_met < 1976 || data.year_met > 2026)) return showError("That year looks off. Leave it blank if you're not sure.");
-    if (data.video_link && !/^https?:\/\//i.test(data.video_link)) return showError("The link should start with https://");
-    if (!data.moment && !data.taught && !data.wish && !picked.length && !data.video_link) {
-      return showError("Add at least a few words, a photo or a video.");
+    if (!data.moment && !picked.length) {
+      return showError("Add a photo, a video or a few words.");
     }
 
     btn.disabled = true; btn.textContent = "Adding to the wall…";

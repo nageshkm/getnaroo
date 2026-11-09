@@ -44,14 +44,7 @@
   </section>
 
   <section id="open" hidden>
-    <div class="filters" role="group" aria-label="Filter memories">
-      <button type="button" data-f="all" aria-pressed="true">All</button>
-      <button type="button" data-f="work" aria-pressed="false">💼 Work</button>
-      <button type="button" data-f="tennis" aria-pressed="false">🎾 Tennis</button>
-      <button type="button" data-f="beer" aria-pressed="false">🍺 Beer</button>
-      <button type="button" data-f="life" aria-pressed="false">🌱 Life</button>
-    </div>
-    <div class="masonry" id="cards"></div>
+    <div class="masonry" id="cards" style="margin-top:36px"></div>
     <p class="empty" id="empty" hidden>Nothing here yet.</p>
     <p style="text-align:center;margin:24px 0 8px"><a class="btn btn-ghost" href="/share">Add your memory</a></p>
   </section>
@@ -103,12 +96,6 @@
   const pub = path => sb.storage.from(C.BUCKET).getPublicUrl(path).data.publicUrl;
   box.innerHTML = data.map(m => NarooCard.renderCard(m, (m.media || []).map(x => ({ kind: x.kind, url: pub(x.path) })))).join("");
 
-  document.querySelectorAll(".filters button").forEach(b => b.addEventListener("click", () => {
-    document.querySelectorAll(".filters button").forEach(x => x.setAttribute("aria-pressed", String(x === b)));
-    const f = b.dataset.f; let shown = 0;
-    box.querySelectorAll(".card").forEach(c => { const on = f === "all" || c.dataset.relation === f; c.hidden = !on; if (on) shown++; });
-    empty.hidden = shown > 0;
-  }));
 })();
 </script>
 </body>

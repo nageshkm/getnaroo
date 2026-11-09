@@ -45,12 +45,12 @@
       <article class="card" data-relation="${esc(m.relation)}">
         ${mediaHtml}
         <div class="body">
-          <div class="who"><span class="name">${esc(m.name)}</span>${tag}</div>
-          ${meta ? `<div class="meta">${meta}</div>` : ""}
-          ${section("A moment with Naroo", m.moment)}
+          ${m.moment ? `<p class="words">${esc(m.moment)}</p>` : ""}
           ${section("Something he taught me", m.taught)}
           ${section("Wish for v6.0", m.wish)}
           ${link ? `<div class="link"><a href="${esc(link)}" target="_blank" rel="noopener noreferrer">${linkLabel(link)} ↗</a></div>` : ""}
+          <div class="who"><span class="name">— ${esc(m.name)}</span>${tag}</div>
+          ${meta ? `<div class="meta">${meta}</div>` : ""}
         </div>
       </article>`;
   }
