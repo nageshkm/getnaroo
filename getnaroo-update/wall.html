@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Naroo's Wall</title>
+<meta name="description" content="Memories, photos and videos from the people around Naroo, for his 50th.">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="/favicon-32.png" type="image/png" sizes="32x32">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+
+<header class="band">
+  <div class="wrap">
+    <nav class="top">
+      <a class="logo" href="/">get<span>naroo</span></a>
+      <div class="navlinks">
+        <a href="/">Home</a>
+        <a href="/share">Share</a>
+        <a href="/wall" aria-current="page">Wall</a>
+      </div>
+    </nav>
+    <div class="band-body">
+      <span class="badge mono">CONTRIBUTORS · NAROO 5.0</span>
+      <h1>The people who<br><em>built Naroo v5.0.</em></h1>
+      <p class="lede">Colleagues, mentees, doubles partners and drinking buddies, in their own words.</p>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+  <section id="locked" class="locked" hidden>
+    <span class="mono" style="color:var(--amber)">SCHEDULED RELEASE</span>
+    <p class="big">The wall opens on Naroo's 50th.</p>
+    <p class="hint">Sunday, November 16. Everything people have shared is waiting until then.</p>
+    <div class="count" id="countdown" aria-live="off"></div>
+    <p id="waiting" class="hint"></p>
+    <p style="margin-top:24px"><a class="btn btn-court" href="/share">Add your memory before then</a></p>
+  </section>
+
+  <section id="open" hidden>
+    <div class="masonry" id="cards" style="margin-top:36px"></div>
+    <p class="empty" id="empty" hidden>Nothing here yet.</p>
+    <p style="text-align:center;margin:24px 0 8px"><a class="btn btn-ghost" href="/share">Add your memory</a></p>
+  </section>
+</main>
+
+<footer class="site">Made by Naroo's friends, colleagues, mentees and doubles partners · getnaroo.com</footer>
+
+<script src="/config.js"></script>
+<script src="/card.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+(async function () {
+  const C = window.NAROO;
+  const reveal = new Date(C.REVEAL_AT);
+  const configured = C.SUPABASE_URL && C.SUPABASE_ANON_KEY && window.supabase;
+  const sb = configured ? window.supabase.createClient(C.SUPABASE_URL, C.SUPABASE_ANON_KEY) : null;
+
+  function tick() {
+    const ms = reveal - new Date();
+    if (ms <= 0) { location.reload(); return; }
+    const d = Math.floor(ms / 864e5), h = Math.floor(ms / 36e5) % 24, m = Math.floor(ms / 6e4) % 60, s = Math.floor(ms / 1e3) % 60;
+    document.getElementById("countdown").innerHTML =
+      [[d, "days"], [h, "hours"], [m, "min"], [s, "sec"]].map(([v, l]) => `<div><b>${String(v).padStart(2, "0")}</b><small>${l}</small></div>`).join("");
+  }
+
+  if (new Date() < reveal) {
+    document.getElementById("locked").hidden = false;
+    tick(); setInterval(tick, 1000);
+    if (sb) {
+      const { data } = await sb.rpc("memory_count");
+      if (typeof data === "number" && data > 0) {
+        document.getElementById("waiting").textContent = `${data} ${data === 1 ? "memory is" : "memories are"} already waiting.`;
+      }
+    }
+    return;
+  }
+
+  document.getElementById("open").hidden = false;
+  const box = document.getElementById("cards");
+  const empty = document.getElementById("empty");
+  if (!sb) { empty.hidden = false; return; }
+
+  const { data, error } = await sb.from("memories")
+    .select("id,name,relation,how_known,year_met,moment,taught,wish,video_link,media,featured,created_at")
+    .order("featured", { ascending: false })
+    .order("created_at", { ascending: true });
+  if (error || !data || !data.length) { empty.hidden = false; return; }
+
+  const pub = path => sb.storage.from(C.BUCKET).getPublicUrl(path).data.publicUrl;
+  box.innerHTML = data.map(m => NarooCard.renderCard(m, (m.media || []).map(x => ({ kind: x.kind, url: pub(x.path) })))).join("");
+
+})();
+</script>
+</body>
+</html>

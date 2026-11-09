@@ -1,0 +1,234 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Add to Naroo's Wall</title>
+<meta name="description" content="Share a photo, video or memory for Naroo's 50th.">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="/favicon-32.png" type="image/png" sizes="32x32">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+
+<header class="band">
+  <div class="wrap">
+    <nav class="top">
+      <a class="logo" href="/">get<span>naroo</span></a>
+      <div class="navlinks">
+        <a href="/">Home</a>
+        <a href="/share" aria-current="page">Share</a>
+        <a href="/wall">Wall</a>
+      </div>
+    </nav>
+    <div class="band-body">
+      <span class="badge mono">PULL REQUEST · NAROO 5.0</span>
+      <h1>Add your memory<br><em>to Naroo's wall.</em></h1>
+      <p class="lede">This wall is from all of us. What you share goes up under your name, next to everyone else's, when Naroo turns 50 on November 16.</p>
+    </div>
+  </div>
+</header>
+
+<main class="wrap narrow">
+  <div id="closed" class="empty" hidden>
+    <p><strong>The wall is getting ready.</strong><br>Check back in a little while.</p>
+  </div>
+
+  <form class="share" id="form" novalidate>
+    <fieldset>
+      <div class="field">
+        <span style="font-weight:500">Photos and videos</span>
+        <div class="drop" id="drop" tabindex="0" role="button" aria-label="Add photos or videos">
+          <strong>Tap to add photos or videos</strong>
+          <span class="hint">Add one or a few, up to 6. Videos up to 50 MB, about a minute from a phone.</span>
+        </div>
+        <input type="file" id="files" accept="image/*,video/*" multiple hidden>
+        <div class="thumbs" id="thumbs"></div>
+      </div>
+
+      <label class="field">Say anything
+        <textarea name="moment" maxlength="5000" style="min-height:180px" placeholder="A moment, a story, a thank-you, a joke only he'll get…"></textarea>
+      </label>
+
+      <label class="field">Who's it from?
+        <input type="text" name="name" maxlength="80" autocomplete="name" required placeholder="Your name, as Naroo knows you">
+      </label>
+    </fieldset>
+
+    <div>
+      <p class="error" id="err" role="alert" hidden></p>
+      <div class="progress" id="prog" hidden><div></div></div>
+      <p class="hint" id="progText" hidden></p>
+      <button class="btn btn-court" type="submit" id="submit" style="width:100%;margin-top:12px">Add to the wall</button>
+      <p class="hint" style="margin-top:12px;text-align:center">Cards appear on the wall on November 16. Until then, only the friends organizing this can see them.</p>
+    </div>
+  </form>
+
+  <section id="done" hidden style="margin:40px 0 64px">
+    <span class="badge mono" style="background:var(--court);color:var(--ball)">MERGED ✓</span>
+    <h2 class="serif" style="font-size:2rem;margin:14px 0 6px">You're on the wall.</h2>
+    <p class="hint" style="margin-bottom:24px">Here's your card. It goes up with everyone else's on November 16. Thank you for being part of this.</p>
+    <div id="preview"></div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:8px">
+      <a class="btn btn-ghost" href="/share" id="another">Add another memory</a>
+      <a class="btn btn-ghost" href="/">Back to getnaroo.com</a>
+    </div>
+  </section>
+</main>
+
+<footer class="site">Made by Naroo's friends, colleagues, mentees and doubles partners · getnaroo.com</footer>
+
+<script src="/config.js"></script>
+<script src="/card.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+(function () {
+  const C = window.NAROO;
+  const form = document.getElementById("form");
+  const filesInput = document.getElementById("files");
+  const drop = document.getElementById("drop");
+  const thumbs = document.getElementById("thumbs");
+  const err = document.getElementById("err");
+  const btn = document.getElementById("submit");
+  const prog = document.getElementById("prog");
+  const progText = document.getElementById("progText");
+  let picked = []; // { file, kind, url }
+
+  const configured = C.SUPABASE_URL && C.SUPABASE_ANON_KEY && window.supabase;
+  if (!configured) {
+    form.hidden = true;
+    document.getElementById("closed").hidden = false;
+    return;
+  }
+  const sb = window.supabase.createClient(C.SUPABASE_URL, C.SUPABASE_ANON_KEY);
+
+  function showError(msg) { err.textContent = msg; err.hidden = false; err.scrollIntoView({ behavior: "smooth", block: "center" }); }
+  function clearError() { err.hidden = true; }
+
+  function renderThumbs() {
+    thumbs.innerHTML = "";
+    picked.forEach((p, i) => {
+      const d = document.createElement("div");
+      d.className = "thumb";
+      d.innerHTML = p.kind === "video"
+        ? `<video src="${p.url}" muted playsinline preload="metadata"></video><span class="tag">video</span>`
+        : `<img src="${p.url}" alt="">`;
+      const x = document.createElement("button");
+      x.type = "button"; x.setAttribute("aria-label", "Remove"); x.textContent = "×";
+      x.onclick = () => { URL.revokeObjectURL(p.url); picked.splice(i, 1); renderThumbs(); };
+      d.appendChild(x);
+      thumbs.appendChild(d);
+    });
+  }
+
+  function addFiles(list) {
+    clearError();
+    for (const f of list) {
+      if (picked.length >= C.MAX_FILES) { showError(`You can add up to ${C.MAX_FILES} files.`); break; }
+      const kind = f.type.startsWith("video/") ? "video" : f.type.startsWith("image/") ? "image" : null;
+      if (!kind) { showError(`"${f.name}" isn't a photo or video.`); continue; }
+      if (kind === "video" && f.size > C.MAX_VIDEO_MB * 1024 * 1024) {
+        showError(`"${f.name}" is over ${C.MAX_VIDEO_MB} MB. Upload it to YouTube (unlisted) or Google Drive and paste the link below instead.`);
+        continue;
+      }
+      picked.push({ file: f, kind, url: URL.createObjectURL(f) });
+    }
+    renderThumbs();
+  }
+
+  drop.onclick = () => filesInput.click();
+  drop.onkeydown = e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); filesInput.click(); } };
+  filesInput.onchange = () => { addFiles(filesInput.files); filesInput.value = ""; };
+  ["dragenter", "dragover"].forEach(t => drop.addEventListener(t, e => { e.preventDefault(); drop.classList.add("over"); }));
+  ["dragleave", "drop"].forEach(t => drop.addEventListener(t, e => { e.preventDefault(); drop.classList.remove("over"); }));
+  drop.addEventListener("drop", e => addFiles(e.dataTransfer.files));
+
+  // Shrink photos to a sensible size before upload (keeps the free storage happy).
+  async function compressImage(file) {
+    if (file.type === "image/gif") return { blob: file, ext: "gif", type: file.type };
+    try {
+      const bmp = await createImageBitmap(file, { imageOrientation: "from-image" });
+      const max = 1800;
+      const scale = Math.min(1, max / Math.max(bmp.width, bmp.height));
+      const w = Math.round(bmp.width * scale), h = Math.round(bmp.height * scale);
+      const canvas = document.createElement("canvas");
+      canvas.width = w; canvas.height = h;
+      canvas.getContext("2d").drawImage(bmp, 0, 0, w, h);
+      const blob = await new Promise(r => canvas.toBlob(r, "image/jpeg", 0.85));
+      if (!blob) throw new Error("encode failed");
+      return { blob, ext: "jpg", type: "image/jpeg" };
+    } catch {
+      return null;
+    }
+  }
+
+  function videoExt(f) {
+    const m = /\.([a-z0-9]{2,5})$/i.exec(f.name);
+    return m ? m[1].toLowerCase() : (f.type.split("/")[1] || "mp4");
+  }
+
+  function setProgress(done, total, label) {
+    prog.hidden = false; progText.hidden = false;
+    prog.firstElementChild.style.width = Math.round((done / total) * 100) + "%";
+    progText.textContent = label;
+  }
+
+  form.addEventListener("submit", async e => {
+    e.preventDefault();
+    clearError();
+    const fd = new FormData(form);
+    const data = {
+      name: (fd.get("name") || "").trim(),
+      moment: (fd.get("moment") || "").trim() || null,
+    };
+    if (!data.name) return showError("Please add your name, so Naroo knows who this is from.");
+    if (!data.moment && !picked.length) {
+      return showError("Add a photo, a video or a few words.");
+    }
+
+    btn.disabled = true; btn.textContent = "Adding to the wall…";
+    const id = crypto.randomUUID();
+    const media = [];
+    const previewMedia = [];
+    try {
+      const total = picked.length + 1;
+      for (let i = 0; i < picked.length; i++) {
+        const p = picked[i];
+        setProgress(i, total, `Uploading ${i + 1} of ${picked.length}…`);
+        let blob = p.file, ext, type = p.file.type;
+        if (p.kind === "image") {
+          const c = await compressImage(p.file);
+          if (!c) throw new Error(`We couldn't read "${p.file.name}". Try a JPEG or PNG instead.`);
+          ({ blob, ext, type } = c);
+        } else {
+          ext = videoExt(p.file);
+        }
+        const path = `${id}/${i + 1}.${ext}`;
+        const { error } = await sb.storage.from(C.BUCKET).upload(path, blob, { contentType: type, upsert: false });
+        if (error) throw new Error("Upload failed: " + error.message);
+        media.push({ path, kind: p.kind });
+        previewMedia.push({ url: p.url, kind: p.kind });
+      }
+      setProgress(total - 1, total, "Saving your memory…");
+      const { error } = await sb.from("memories").insert({ id, ...data, media });
+      if (error) throw new Error("Couldn't save your memory: " + error.message);
+      setProgress(total, total, "Done");
+
+      document.getElementById("preview").innerHTML = NarooCard.renderCard(data, previewMedia);
+      form.hidden = true;
+      document.getElementById("done").hidden = false;
+      window.scrollTo({ top: document.getElementById("done").offsetTop - 20, behavior: "smooth" });
+    } catch (ex) {
+      showError((ex && ex.message ? ex.message : "Something went wrong.") + " Please try again.");
+      btn.disabled = false; btn.textContent = "Add to the wall";
+      prog.hidden = true; progText.hidden = true;
+    }
+  });
+})();
+</script>
+</body>
+</html>
